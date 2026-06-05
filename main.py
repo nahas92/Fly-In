@@ -2,29 +2,8 @@
 
 from parser.map_parser import MapParser
 from simulation.engine import SimulationEngine
-from models.graph import Graph
-from simulation.state import SimulationState
-from models.drone import Drone
-from models.zone import Zone
-from typing import Optional
-
-
-class SimpleAlgorithm:
-    """Temporary stub algorithm that moves drones forward."""
-
-    def get_next_zone(
-        self,
-        drone: Drone,
-        graph: Graph,
-        state: SimulationState,
-    ) -> Optional[Zone]:
-        """Return first valid neighbor of drone's current zone."""
-        neighbors = graph.get_neighbors(
-            drone.current_zone.name
-        )
-        for zone in neighbors:
-            return zone
-        return None
+from pathfinding.scheduler import Scheduler
+from visualization.terminal import TerminalVisualizer
 
 
 def main() -> None:
@@ -32,10 +11,12 @@ def main() -> None:
     parser = MapParser()
     graph = parser.parse("maps/test_simple.txt")
 
-    algorithm = SimpleAlgorithm()
-    engine = SimulationEngine(graph, algorithm)
-    turns = engine.run()
-    print(f"Completed in {turns} turns")
+    scheduler = Scheduler(graph)
+    engine = SimulationEngine(graph, scheduler)
+    visualizer = TerminalVisualizer(graph)
+
+    turns = engine.run(visualizer)
+    visualizer.print_summary(turns, graph.nb_drones)
 
 
 if __name__ == "__main__":

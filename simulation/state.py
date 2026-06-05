@@ -97,7 +97,10 @@ class SimulationState:
         return all(d.delivered for d in self.drones)
 
     def zone_has_capacity(
-        self, zone_name: str, planned_exits: Dict[str, int]
+        self,
+        zone_name: str,
+        planned_exits: Dict[str, int],
+        planned_entries: Dict[str, int],
     ) -> bool:
         """Check if a zone can accept one more drone this turn.
 
@@ -119,7 +122,8 @@ class SimulationState:
 
         current = self.get_zone_drone_count(zone_name)
         exits = planned_exits.get(zone_name, 0)
-        effective = current - exits
+        entries = planned_entries.get(zone_name, 0)
+        effective = current - exits + entries
 
         return effective < zone.max_drones
 

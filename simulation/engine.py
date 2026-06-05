@@ -1,6 +1,6 @@
 """Simulation engine that routes drones turn by turn."""
 
-from typing import List, Dict
+from typing import List, Dict, Any, Optional
 from models.drone import Drone
 from models.zone import Zone, ZoneType
 from models.graph import Graph
@@ -53,7 +53,7 @@ class SimulationEngine:
     def __init__(
         self,
         graph: Graph,
-        algorithm: object,
+        algorithm: Any,
     ) -> None:
         """Initialize the engine with a graph and algorithm.
 
@@ -62,7 +62,7 @@ class SimulationEngine:
             algorithm: Pathfinding algorithm with get_next_zone().
         """
         self.graph: Graph = graph
-        self.algorithm: object = algorithm
+        self.algorithm: Any = algorithm
 
         if graph.start_zone is None:
             raise ValueError(
@@ -77,8 +77,11 @@ class SimulationEngine:
             graph, drones
         )
 
-    def run(self) -> int:
+    def run(self, visualizer: Optional[Any] = None) -> int:
         """Run the simulation until all drones are delivered.
+
+        Args:
+            visualizer: Optional terminal visualizer.
 
         Returns:
             Total number of turns taken.
@@ -87,7 +90,10 @@ class SimulationEngine:
             self.state.turn += 1
             output = self._run_turn()
             if output:
-                print(output)
+                if visualizer is not None:
+                    visualizer.print_turn(self.state.turn, output)
+                else:
+                    print(output)
         return self.state.turn
 
     def _run_turn(self) -> str:
@@ -97,12 +103,14 @@ class SimulationEngine:
             The output line for this turn.
         """
         planned_exits: Dict[str, int] = {}
+        planned_entries: Dict[str, int] = {}
         planned_connection_uses: Dict[str, int] = {}
         planned_moves: List[PlannedMove] = []
 
         self._plan_moves(
             planned_moves,
             planned_exits,
+            planned_entries,
             planned_connection_uses,
         )
 
@@ -114,6 +122,7 @@ class SimulationEngine:
         self,
         planned_moves: List[PlannedMove],
         planned_exits: Dict[str, int],
+        planned_entries: Dict[str, int],
         planned_connection_uses: Dict[str, int],
     ) -> None:
         """Decide what each active drone will do this turn.
@@ -129,6 +138,7 @@ class SimulationEngine:
                     drone,
                     planned_moves,
                     planned_exits,
+                    planned_entries,
                     planned_connection_uses,
                 )
             else:
@@ -136,6 +146,7 @@ class SimulationEngine:
                     drone,
                     planned_moves,
                     planned_exits,
+                    planned_entries,
                     planned_connection_uses,
                 )
 
@@ -144,6 +155,7 @@ class SimulationEngine:
         drone: Drone,
         planned_moves: List[PlannedMove],
         planned_exits: Dict[str, int],
+        planned_entries: Dict[str, int],
         planned_connection_uses: Dict[str, int],
     ) -> None:
         """Plan the arrival of a drone mid-flight to restricted zone.
@@ -176,12 +188,16 @@ class SimulationEngine:
         planned_exits[drone.current_zone.name] = (
             planned_exits.get(drone.current_zone.name, 0) + 1
         )
+        planned_entries[destination.name] = (
+            planned_entries.get(destination.name, 0) + 1
+        )
 
     def _plan_new_move(
         self,
         drone: Drone,
         planned_moves: List[PlannedMove],
         planned_exits: Dict[str, int],
+        planned_entries: Dict[str, int],
         planned_connection_uses: Dict[str, int],
     ) -> None:
         """Plan a new move for a drone currently sitting in a zone.
@@ -211,7 +227,7 @@ class SimulationEngine:
         )
 
         zone_ok = self.state.zone_has_capacity(
-            next_zone.name, planned_exits
+            next_zone.name, planned_exits, planned_entries
         )
         conn_ok = self.state.connection_has_capacity(
             drone.current_zone.name,
@@ -236,6 +252,9 @@ class SimulationEngine:
 
         planned_exits[drone.current_zone.name] = (
             planned_exits.get(drone.current_zone.name, 0) + 1
+        )
+        planned_entries[next_zone.name] = (
+            planned_entries.get(next_zone.name, 0) + 1
         )
         planned_connection_uses[conn_key] = (
             planned_connection_uses.get(conn_key, 0) + 1
@@ -268,6 +287,9 @@ class SimulationEngine:
                     and destination.name == end_zone.name
                 ):
                     drone.delivered = True
+
+                if hasattr(self.algorithm, "confirm_move"):
+                    self.algorithm.confirm_move(drone)
 
     def _build_output(
         self, planned_moves: List[PlannedMove]
