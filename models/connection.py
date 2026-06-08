@@ -1,9 +1,6 @@
 """Connection model representing an edge between two zones."""
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from models.zone import Zone
+from models.zone import Zone
 
 
 class Connection:
@@ -21,8 +18,8 @@ class Connection:
 
     def __init__(
         self,
-        zone_a: "Zone",
-        zone_b: "Zone",
+        zone_a: Zone,
+        zone_b: Zone,
         max_link_capacity: int = 1,
     ) -> None:
         """Initialize a Connection.
@@ -32,8 +29,8 @@ class Connection:
             zone_b: The other endpoint.
             max_link_capacity: Max simultaneous traversals (default 1).
         """
-        self.zone_a: "Zone" = zone_a
-        self.zone_b: "Zone" = zone_b
+        self.zone_a: Zone = zone_a
+        self.zone_b: Zone = zone_b
         self.max_link_capacity: int = max_link_capacity
         self.current_usage: int = 0
 
@@ -56,7 +53,7 @@ class Connection:
             or (a == zone_name_2 and b == zone_name_1)
         )
 
-    def other_zone(self, zone_name: str) -> "Zone":
+    def other_zone(self, zone_name: str) -> Zone:
         """Given one zone name, return the zone on the other end.
 
         Args:
@@ -73,7 +70,7 @@ class Connection:
         if self.zone_b.name == zone_name:
             return self.zone_a
         raise ValueError(
-            f"Zone '{zone_name}' is not part of this connection"
+            f"Zone '{zone_name}' is not part of this connection."
         )
 
     def is_at_capacity(self) -> bool:
@@ -100,6 +97,6 @@ class Connection:
             String showing both zone names.
         """
         return (
-            f"Connection({self.zone_a.name!r})"
-            f" <-> {self.zone_b.name!r}"
+            f"Connection({self.zone_a.name!r}"
+            f" <-> {self.zone_b.name!r})"
         )

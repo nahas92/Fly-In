@@ -113,6 +113,6 @@ class Graph:
             String showing zone and connection counts.
         """
         return (
-            f"Graph({len(self.zones)} zones "
-            f"{len(self.connections)} connections"
+            f"Graph({len(self.zones)} zones, "
+            f"{len(self.connections)} connections)"
         )
